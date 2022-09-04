@@ -41,6 +41,15 @@ logging.info('History loaded.')
 
 queue = Queue()
 
+
+def Init():
+    global w4
+    w4 = W4FTPS()
+    w4.connect()
+    logging.info('Connected to W4.')
+    w4.login()
+    logging.info('Logged in to W4.')
+
 def Process(file_full):
 
 
@@ -59,11 +68,7 @@ def Process(file_full):
 
     logging.info(f"{common_name:<30}- Not in history.")
 
-    w4 = W4FTPS()
-    w4.connect()
-    logging.info('Connected to W4.')
-    w4.login()
-    logging.info('Logged in to W4.')
+
 
     if PSUtil.isPS(file):
 
@@ -105,11 +110,9 @@ def Process(file_full):
         fit.deleteJSON()
         logging.info(f'{file:<30}- Deleted.')
 
-    w4.close()
+
 
     return common_name
-
- 
 
 
 total_files = []
@@ -125,7 +128,7 @@ bar = progressbar.ProgressBar(max_value=len(total_files),widgets=widgets).start(
 
 processed = 0
 
-pool = Pool(CORE)
+pool = Pool(CORE, Init)
 for result in pool.imap(Process,total_files):
     if result:
         HIST.append(result)
