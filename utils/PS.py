@@ -1,20 +1,18 @@
 from os import remove,path
 from subprocess import run
 from consts import EXT
-from config import *
+
 
 class PSUtil:
-    def __init__(self,ps_path,ps_filename,debug=False) -> None:
+    def __init__(self,ps_path,ps_filename,temp_path) -> None:
         self.ps_path = ps_path
         self.ps_filename = ps_filename
         self.ps_corename = path.splitext(self.ps_filename)[0]
-        self.temp_path = TEMP_PATH
 
         self.pdf_path = ''
         self.pdf_basename = ''
 
-        if debug:
-            self.temp_path = TEMP_PATH_DEV            
+        self.temp_path = temp_path            
 
 
     def toPDF(self):

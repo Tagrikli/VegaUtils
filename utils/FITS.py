@@ -3,7 +3,6 @@ from astropy.table import Table
 import pandas as pd
 import json
 import numpy as np
-from config import TEMP_PATH, TEMP_PATH_DEV
 
 from consts import EXT
 from os import path, remove
@@ -32,12 +31,11 @@ class FITUtil:
     """
     FITS parser spesifically designed for Yuki Kaneko to display information in FITS files on a website.
     """
-    def __init__(self,fits_path,fits_filename,debug=False) -> None:
+    def __init__(self,fits_path,fits_filename,temp_path) -> None:
 
         self.fits_path= fits_path
         self.fits_filename = fits_filename
         self.fits_corename = path.splitext(self.fits_filename)[0]
-        self.temp_path = TEMP_PATH
 
         self.json_path = ''
         self.json_basename = ''
@@ -45,8 +43,7 @@ class FITUtil:
         fits_fullpath = path.join(fits_path,fits_filename)
         self._fits = fits.open(fits_fullpath)
 
-        if debug:
-            self.temp_path = TEMP_PATH_DEV
+        self.temp_path = temp_path
     
 
     def parseEXT0(self) -> dict:
@@ -73,9 +70,9 @@ class FITUtil:
         for header in headers:
             value = HDU.data[header][0]
 
-            if header == "SIGNIFICANCE":
+            if header == "TRIG_DETS":
                 #normalized = Utils.NormalizeArray(header,value)
-                result[header] = [float(sig_value) for sig_value in value]
+                result[header] = [int(sig_value) for sig_value in value]
                 #for sig_key, sig_value in normalized.items():
                 #    result[sig_key] = float(sig_value)
 
@@ -144,3 +141,7 @@ class FITUtil:
     @classmethod
     def isFITS(cls,filename):
         return path.splitext(filename)[1] == EXT.FITS
+
+
+if __name__ == '__main__':
+    print("asdd")

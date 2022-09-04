@@ -1,8 +1,12 @@
 from subprocess import check_output,run
 from config import BASE_LAST, W4_PATH
 from os import path,remove
+import re
 
 
+def fileIsValid(filename):
+    s = re.search(r'^[BPS][1-4]_[0-9]{6}_[0-9]{2}_(12det_|8cha_)?[0-9]{1,5}\.(ps|fit)$',filename)
+    return s is not None
 
 
 def commonName(filename):

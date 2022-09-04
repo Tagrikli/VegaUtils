@@ -2,12 +2,14 @@ import sys
 import os
 from os import path
 import logging
-from config import BASE_PATH_DEV, HIST_FILENAME
+from config import BASE_DIR, BASE_DIR_DEV, HIST_FILE,TEMP_DIR,TEMP_DIR_DEV
 from utils.FTP_TLS import W4FTPS, Explicit_FTP_TLS
 from utils.FITS import FITUtil
 from utils.PS import PSUtil
-from utils.General import adaptPath, commonName
+from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
+
+
 
 logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
@@ -18,10 +20,13 @@ logging.basicConfig(
     ]
 )
 
-DEBUG = True
+
+if len(sys.argv) > 1 and sys.argv[1] == 'debug':
+    BASE_DIR = BASE_DIR_DEV
+    TEMP_DIR = TEMP_DIR_DEV
 
 
-HIST.loadHistory(HIST_FILENAME)
+HIST.loadHistory(HIST_FILE)
 logging.debug('History loaded.')
 
 w4 = W4FTPS()
@@ -30,8 +35,13 @@ logging.debug('Connected to W4.')
 w4.login()
 logging.debug('Logged in to W4.')
 
-for pathe, dirs, files in os.walk(BASE_PATH_DEV,False):
+
+for pathe, dirs, files in os.walk(BASE_DIR,False):
     for file in files:
+
+        if not fileIsValid(file):
+            logging.debug(f"{file:<30}- Not valid. Skipped.")
+            continue
 
         common_name = commonName(file)
 
@@ -43,7 +53,7 @@ for pathe, dirs, files in os.walk(BASE_PATH_DEV,False):
 
                 logging.debug(f'{file:<30}- Processing')
                 
-                ps = PSUtil(pathe,file,DEBUG)
+                ps = PSUtil(pathe,file,TEMP_DIR)
                                 
                 ps.toPDF()
                 logging.debug(f'{file:<30}- Converted to PDF.')
@@ -62,7 +72,7 @@ for pathe, dirs, files in os.walk(BASE_PATH_DEV,False):
 
                 logging.debug(f'{file:<30}- Processing')
                 
-                fit = FITUtil(pathe,file,DEBUG)
+                fit = FITUtil(pathe,file,TEMP_DIR)
 
                 fit.toJSON()
                 logging.debug(f'{file:<30}- Converted to JSON.')
@@ -76,10 +86,11 @@ for pathe, dirs, files in os.walk(BASE_PATH_DEV,False):
                 logging.debug(f'{file:<30}- Deleted.')
 
             HIST.append(common_name)
-            logging.debug(f'{common_name}: Added to history.')
+            logging.debug(f'{common_name:<30}- Added to history.')
 
         else:
             logging.debug(f'{file:<30}- Already processed.')
+
 
 HIST.saveHistory()
 logging.debug(f'History saved.')
