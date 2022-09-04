@@ -9,6 +9,7 @@ from utils.FITS import FITUtil
 from utils.PS import PSUtil
 from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
+import multiprocessing
 
 
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
@@ -45,66 +46,85 @@ if args.upload is not None:
     logging.info('Logged in to W4.')
 
 
-for pathe, dirs, files in os.walk(BASE_DIR,False):
-    for file in files:
-
-        if not fileIsValid(file):
-            logging.info(f"{file:<30}- Not valid. Skipping.")
-            continue
+def Process(file,pathe):
+    if not fileIsValid(file):
+        logging.info(f"{file:<30}- Not valid. Skipping.")
+        return
 
 
-        common_name = commonName(file)
-        if HIST.inHistory(common_name):
-            logging.debug(f'{file:<30}- Already processed. Skipping.')
-            continue
+    common_name = commonName(file)
+    if HIST.inHistory(common_name):
+        logging.debug(f'{file:<30}- Already processed. Skipping.')
+        return
 
 
-        logging.info(f"{common_name:<30}- Not in history.")
+    logging.info(f"{common_name:<30}- Not in history.")
 
-        if PSUtil.isPS(file):
+    if PSUtil.isPS(file):
 
-            logging.info(f'{file:<30}- Processing')
-            
-            ps = PSUtil(pathe,file,TEMP_DIR)
-                            
-            ret = ps.toPDF()
-            if ret:
-                logging.info(f'{file:<30}- Converted to PDF.')
+        logging.info(f'{file:<30}- Processing')
+        
+        ps = PSUtil(pathe,file,TEMP_DIR)
+                        
+        ret = ps.toPDF()
+        if ret:
+            logging.info(f'{file:<30}- Converted to PDF.')
 
-                dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
-
-                if args.upload is not None:
-                    w4.sendFile(ps.pdf_path,dest_path)
-                    logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
-
-
-                ps.deletePDF()
-                logging.info(f'{ps.pdf_basename:<30}- Deleted.')
-            else:
-                ps.deletePDF()
-                continue
-
-
-        if FITUtil.isFITS(file):
-
-            logging.info(f'{file:<30}- Processing')
-            
-            fit = FITUtil(pathe,file,TEMP_DIR)
-
-            fit.toJSON()
-            logging.info(f'{file:<30}- Converted to JSON.')
-
-            dest_path = adaptPath(path.join(pathe,fit.json_basename))
+            dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
 
             if args.upload is not None:
-                w4.sendFile(fit.json_path,dest_path)
-                logging.info(f'{file:<30}- Sent to W4.')
+                w4.sendFile(ps.pdf_path,dest_path)
+                logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
 
-            fit.deleteJSON()
-            logging.info(f'{file:<30}- Deleted.')
 
-        HIST.append(common_name)
-        logging.info(f'{common_name:<30}- Added to history.')
+            ps.deletePDF()
+            logging.info(f'{ps.pdf_basename:<30}- Deleted.')
+        else:
+            ps.deletePDF()
+            return
+
+
+    if FITUtil.isFITS(file):
+
+        logging.info(f'{file:<30}- Processing')
+        
+        fit = FITUtil(pathe,file,TEMP_DIR)
+
+        fit.toJSON()
+        logging.info(f'{file:<30}- Converted to JSON.')
+
+        dest_path = adaptPath(path.join(pathe,fit.json_basename))
+
+        if args.upload is not None:
+            w4.sendFile(fit.json_path,dest_path)
+            logging.info(f'{file:<30}- Sent to W4.')
+
+        fit.deleteJSON()
+        logging.info(f'{file:<30}- Deleted.')
+
+
+    HIST.append(common_name)
+    logging.info(f'{common_name:<30}- Added to history.')
+
+
+core = 10
+
+for pathe, dirs, files in os.walk(BASE_DIR,False):
+
+    pages = [files[i:i+core] for i in range(0, len(files), core)]
+    for page in pages:
+        
+        procs = []
+        for file in page:
+            p = multiprocessing.Process(target=Process,args=(file,pathe,))
+            p.start()
+            procs.append(p)
+            
+        [proc.join() for proc in procs]
+      
+
+
+       
 
 
 HIST.saveHistory()
