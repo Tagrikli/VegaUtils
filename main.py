@@ -136,7 +136,7 @@ for result in pool.imap(Process,total_files):
     processed += 1
     bar.update(processed)
 
-
+w4.close()
 HIST.saveHistory()
 exit()
 
