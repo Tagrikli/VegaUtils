@@ -81,6 +81,7 @@ for pathe, dirs, files in os.walk(BASE_DIR,False):
                 ps.deletePDF()
                 logging.info(f'{ps.pdf_basename:<30}- Deleted.')
             else:
+                ps.deletePDF()
                 continue
 
 
