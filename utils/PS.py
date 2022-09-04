@@ -2,6 +2,7 @@ from os import remove,path
 from subprocess import run
 from consts import EXT
 
+import logging
 
 class PSUtil:
     def __init__(self,ps_path,ps_filename,temp_path) -> None:
@@ -23,7 +24,11 @@ class PSUtil:
         self.pdf_path = dst_path
 
         p = run(['ps2pdf',src_path,dst_path])
-        return p.returncode    
+        if p.returncode != 0:
+            logging.error(f"{self.ps_filename:<30} Processing Failed")
+            return False
+
+        return True
 
 
     def deletePDF(self):

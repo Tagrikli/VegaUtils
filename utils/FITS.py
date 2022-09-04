@@ -7,6 +7,8 @@ import numpy as np
 from consts import EXT
 from os import path, remove
 
+import logging
+
 class Extract:
     @classmethod
     def TTYPES(cls, header:dict):
@@ -72,13 +74,15 @@ class FITUtil:
 
             if header == "TRIG_DETS":
                 #normalized = Utils.NormalizeArray(header,value)
-                result[header] = [int(sig_value) for sig_value in value]
+                result[header] = [int(trig_value) for trig_value in value]
                 #for sig_key, sig_value in normalized.items():
                 #    result[sig_key] = float(sig_value)
 
-            else:
-                result[header] = float(value)
-        
+            elif header == "SIGNIFICANCE":
+                result[header] = [float(sig_value) for sig_value in value]
+
+
+
         return result
 
     def parseEXT2(self) -> list:

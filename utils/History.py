@@ -4,6 +4,7 @@ class HIST:
     HISTORY_OLD = []
     HISTORY_NEW = []
     HISTORY_PATH = ''
+    CNT = 0
 
 
     @classmethod
@@ -23,6 +24,10 @@ class HIST:
     @classmethod
     def append(cls,filename):
         cls.HISTORY_NEW.append(filename)
+        cls.CNT += 1
+        if cls.CNT % 50 == 0:
+            cls.saveHistory()
+            cls.CNT = 0
 
     @classmethod
     def saveHistory(cls):

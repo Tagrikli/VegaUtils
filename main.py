@@ -12,7 +12,7 @@ from utils.History import HIST
 
 
 logging.basicConfig(
-    format='[%(asctime)s] -> %(message)s',
+    format='[%(asctime)s - %(funcname)s] -> %(message)s',
     level=logging.DEBUG,
     handlers=[
         logging.FileHandler("debug.log"),
@@ -55,17 +55,20 @@ for pathe, dirs, files in os.walk(BASE_DIR,False):
                 
                 ps = PSUtil(pathe,file,TEMP_DIR)
                                 
-                ps.toPDF()
-                logging.debug(f'{file:<30}- Converted to PDF.')
+                ret = ps.toPDF()
+                if ret:
+                    logging.debug(f'{file:<30}- Converted to PDF.')
 
-                dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
+                    dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
 
-                w4.sendFile(ps.pdf_path,dest_path)
-                logging.debug(f'{ps.pdf_basename:<30}- Sent to W4.')
+                    #w4.sendFile(ps.pdf_path,dest_path)
+                    logging.debug(f'{ps.pdf_basename:<30}- Sent to W4.')
 
 
-                ps.deletePDF()
-                logging.debug(f'{ps.pdf_basename:<30}- Deleted.')
+                    #ps.deletePDF()
+                    logging.debug(f'{ps.pdf_basename:<30}- Deleted.')
+                else:
+                    continue
 
 
             if FITUtil.isFITS(file):
@@ -79,10 +82,10 @@ for pathe, dirs, files in os.walk(BASE_DIR,False):
 
                 dest_path = adaptPath(path.join(pathe,fit.json_basename))
 
-                w4.sendFile(fit.json_path,dest_path)
+                #w4.sendFile(fit.json_path,dest_path)
                 logging.debug(f'{file:<30}- Sent to W4.')
 
-                fit.deleteJSON()
+                #fit.deleteJSON()
                 logging.debug(f'{file:<30}- Deleted.')
 
             HIST.append(common_name)
