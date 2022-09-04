@@ -11,7 +11,9 @@ def fileIsValid(filename):
 
 def commonName(filename):
     corename = path.splitext(filename)[0].replace('_12det','').replace('_8cha','')
+    corename = path.basename(corename)
     return corename
+
 
 
 def adaptPath(src_path:str):

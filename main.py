@@ -10,7 +10,7 @@ from utils.PS import PSUtil
 from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
 import multiprocessing
-
+import progressbar
 
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
 parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
@@ -18,15 +18,15 @@ parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs=
 
 args = parser.parse_args()
 
-
 logging.basicConfig(
     format='[%(asctime)s - %(funcName)s] -> %(message)s',
-    level=logging.DEBUG,
+    level=logging.ERROR,
     handlers=[
         logging.FileHandler("debug.log"),
         logging.StreamHandler(sys.stdout)
     ]
 )
+
 
 
 if args.debug is not None:
@@ -46,11 +46,14 @@ if args.upload is not None:
     logging.info('Logged in to W4.')
 
 
-def Process(file,pathe):
+def Process(file_full):
+
+    pathe = os.path.dirname(file_full)
+    file = os.path.basename(file_full)
+
     if not fileIsValid(file):
         logging.info(f"{file:<30}- Not valid. Skipping.")
         return
-
 
     common_name = commonName(file)
     if HIST.inHistory(common_name):
@@ -70,7 +73,7 @@ def Process(file,pathe):
         if ret:
             logging.info(f'{file:<30}- Converted to PDF.')
 
-            dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
+            dest_path = adaptPath(os.path.join(pathe,ps.pdf_basename))           
 
             if args.upload is not None:
                 w4.sendFile(ps.pdf_path,dest_path)
@@ -93,7 +96,7 @@ def Process(file,pathe):
         fit.toJSON()
         logging.info(f'{file:<30}- Converted to JSON.')
 
-        dest_path = adaptPath(path.join(pathe,fit.json_basename))
+        dest_path = adaptPath(os.path.join(pathe,fit.json_basename))
 
         if args.upload is not None:
             w4.sendFile(fit.json_path,dest_path)
@@ -103,28 +106,43 @@ def Process(file,pathe):
         logging.info(f'{file:<30}- Deleted.')
 
 
-    HIST.append(common_name)
-    logging.info(f'{common_name:<30}- Added to history.')
+ 
 
 
-core = 10
 
-for pathe, dirs, files in os.walk(BASE_DIR,False):
+core = 16
+total_files = []
 
-    pages = [files[i:i+core] for i in range(0, len(files), core)]
-    for page in pages:
+for path,dirs,files in os.walk(BASE_DIR):  # Current directory
+
+    for file in files:
+        total_files.append(os.path.join(path,file))
+
+
+widgets = ['Processing...', progressbar.Bar('*'), progressbar.Percentage()]
+bar = progressbar.ProgressBar(max_value=len(total_files),widgets=widgets).start()
+
+processed = 0
+
+
+for index in range(0,len(total_files),core):
+
+    chunk = total_files[index: index + core]
+    procs = []
+    for file in chunk:
+        p = multiprocessing.Process(target=Process,args=(file,))
+        p.start()
+        procs.append(p)
         
-        procs = []
-        for file in page:
-            p = multiprocessing.Process(target=Process,args=(file,pathe,))
-            p.start()
-            procs.append(p)
-            
-        [proc.join() for proc in procs]
-      
+    [proc.join() for proc in procs]
+    
+    common_names = [commonName(file) for file in chunk]
 
+    HIST.append(common_names)
 
-       
+    #logging.info(f'{common_name:<30}- Added to history.')
+    processed += len(chunk)
+    bar.update(processed)       
 
 
 HIST.saveHistory()

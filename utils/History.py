@@ -22,8 +22,8 @@ class HIST:
         return filename in cls.HISTORY_OLD
 
     @classmethod
-    def append(cls,filename):
-        cls.HISTORY_NEW.append(filename)
+    def append(cls,filenames):
+        cls.HISTORY_NEW.extend(filenames)
         cls.CNT += 1
         if cls.CNT % 50 == 0:
             cls.saveHistory()
