@@ -4,7 +4,7 @@ import sys
 import os
 from os import path
 import logging
-from config import BASE_DIR, BASE_DIR_DEV, HIST_FILE,TEMP_DIR,TEMP_DIR_DEV
+from config import BASE_DIR, BASE_DIR_DEV, HIST_FILE,TEMP_DIR,TEMP_DIR_DEV, CORE
 from utils.FTP_TLS import W4FTPS, Explicit_FTP_TLS
 from utils.FITS import FITUtil
 from utils.PS import PSUtil
@@ -111,10 +111,10 @@ def Process(file_full):
 
  
 
-core = 16
+
 total_files = []
 
-for path,dirs,files in os.walk(BASE_DIR):  # Current directory
+for path,dirs,files in os.walk(BASE_DIR):
 
     for file in files:
         total_files.append(os.path.join(path,file))
@@ -125,7 +125,7 @@ bar = progressbar.ProgressBar(max_value=len(total_files),widgets=widgets).start(
 
 processed = 0
 
-pool = Pool(core)
+pool = Pool(CORE)
 for result in pool.imap(Process,total_files):
     if result:
         HIST.append(result)

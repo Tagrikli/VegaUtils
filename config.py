@@ -13,6 +13,8 @@ W4_PATH = '/VEGA_DATA'
 HIST_FILE = 'history'
 MODES = ['Bayesian','Poisson','SN']
 
+CORE = 50
+
 
 ############### W4 FTP CREDENTIALS ##############
 W4_USER = 'magnetars'
