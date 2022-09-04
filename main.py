@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os
 from os import path
@@ -10,9 +11,15 @@ from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
 
 
+parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
+parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
+parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs='*')
+
+args = parser.parse_args()
+
 
 logging.basicConfig(
-    format='[%(asctime)s - %(funcname)s] -> %(message)s',
+    format='[%(asctime)s - %(funcName)s] -> %(message)s',
     level=logging.DEBUG,
     handlers=[
         logging.FileHandler("debug.log"),
@@ -21,83 +28,87 @@ logging.basicConfig(
 )
 
 
-if len(sys.argv) > 1 and sys.argv[1] == 'debug':
+if args.debug is not None:
     BASE_DIR = BASE_DIR_DEV
     TEMP_DIR = TEMP_DIR_DEV
 
 
-HIST.loadHistory(HIST_FILE)
-logging.debug('History loaded.')
 
-w4 = W4FTPS()
-w4.connect()
-logging.debug('Connected to W4.')
-w4.login()
-logging.debug('Logged in to W4.')
+HIST.loadHistory(HIST_FILE)
+logging.info('History loaded.')
+
+if args.upload is not None:
+    w4 = W4FTPS()
+    w4.connect()
+    logging.info('Connected to W4.')
+    w4.login()
+    logging.info('Logged in to W4.')
 
 
 for pathe, dirs, files in os.walk(BASE_DIR,False):
     for file in files:
 
         if not fileIsValid(file):
-            logging.debug(f"{file:<30}- Not valid. Skipped.")
+            logging.info(f"{file:<30}- Not valid. Skipping.")
             continue
 
+
         common_name = commonName(file)
-
-        if not HIST.inHistory(common_name):
-
-            logging.debug(f"{common_name:<30}- Not in history.")
-
-            if PSUtil.isPS(file):
-
-                logging.debug(f'{file:<30}- Processing')
-                
-                ps = PSUtil(pathe,file,TEMP_DIR)
-                                
-                ret = ps.toPDF()
-                if ret:
-                    logging.debug(f'{file:<30}- Converted to PDF.')
-
-                    dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
-
-                    #w4.sendFile(ps.pdf_path,dest_path)
-                    logging.debug(f'{ps.pdf_basename:<30}- Sent to W4.')
+        if HIST.inHistory(common_name):
+            logging.debug(f'{file:<30}- Already processed. Skipping.')
+            continue
 
 
-                    #ps.deletePDF()
-                    logging.debug(f'{ps.pdf_basename:<30}- Deleted.')
-                else:
-                    continue
+        logging.info(f"{common_name:<30}- Not in history.")
+
+        if PSUtil.isPS(file):
+
+            logging.info(f'{file:<30}- Processing')
+            
+            ps = PSUtil(pathe,file,TEMP_DIR)
+                            
+            ret = ps.toPDF()
+            if ret:
+                logging.info(f'{file:<30}- Converted to PDF.')
+
+                dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
+
+                if args.upload is not None:
+                    w4.sendFile(ps.pdf_path,dest_path)
+                    logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
 
 
-            if FITUtil.isFITS(file):
+                ps.deletePDF()
+                logging.info(f'{ps.pdf_basename:<30}- Deleted.')
+            else:
+                continue
 
-                logging.debug(f'{file:<30}- Processing')
-                
-                fit = FITUtil(pathe,file,TEMP_DIR)
 
-                fit.toJSON()
-                logging.debug(f'{file:<30}- Converted to JSON.')
+        if FITUtil.isFITS(file):
 
-                dest_path = adaptPath(path.join(pathe,fit.json_basename))
+            logging.info(f'{file:<30}- Processing')
+            
+            fit = FITUtil(pathe,file,TEMP_DIR)
 
-                #w4.sendFile(fit.json_path,dest_path)
-                logging.debug(f'{file:<30}- Sent to W4.')
+            fit.toJSON()
+            logging.info(f'{file:<30}- Converted to JSON.')
 
-                #fit.deleteJSON()
-                logging.debug(f'{file:<30}- Deleted.')
+            dest_path = adaptPath(path.join(pathe,fit.json_basename))
 
-            HIST.append(common_name)
-            logging.debug(f'{common_name:<30}- Added to history.')
+            if args.upload is not None:
+                w4.sendFile(fit.json_path,dest_path)
+                logging.info(f'{file:<30}- Sent to W4.')
 
-        else:
-            logging.debug(f'{file:<30}- Already processed.')
+            fit.deleteJSON()
+            logging.info(f'{file:<30}- Deleted.')
+
+        HIST.append(common_name)
+        logging.info(f'{common_name:<30}- Added to history.')
 
 
 HIST.saveHistory()
-logging.debug(f'History saved.')
+logging.info(f'History saved.')
 
-
-w4.close()
-logging.debug(f'W4 connection closed.')
+if args.upload is not None:
+    w4.close()
+    logging.info(f'W4 connection closed.')
