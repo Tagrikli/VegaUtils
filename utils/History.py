@@ -23,7 +23,7 @@ class HIST:
 
     @classmethod
     def append(cls,filenames):
-        cls.HISTORY_NEW.extend(filenames)
+        cls.HISTORY_NEW.append(filenames)
         cls.CNT += 1
         if cls.CNT % 50 == 0:
             cls.saveHistory()

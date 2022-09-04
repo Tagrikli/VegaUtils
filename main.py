@@ -1,4 +1,5 @@
 import argparse
+import multiprocessing
 import sys
 import os
 from os import path
@@ -9,7 +10,7 @@ from utils.FITS import FITUtil
 from utils.PS import PSUtil
 from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
-import multiprocessing
+from multiprocessing import Pool,Queue
 import progressbar
 
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
@@ -38,15 +39,10 @@ if args.debug is not None:
 HIST.loadHistory(HIST_FILE)
 logging.info('History loaded.')
 
-if args.upload is not None:
-    w4 = W4FTPS()
-    w4.connect()
-    logging.info('Connected to W4.')
-    w4.login()
-    logging.info('Logged in to W4.')
-
+queue = Queue()
 
 def Process(file_full):
+
 
     pathe = os.path.dirname(file_full)
     file = os.path.basename(file_full)
@@ -63,6 +59,12 @@ def Process(file_full):
 
     logging.info(f"{common_name:<30}- Not in history.")
 
+    w4 = W4FTPS()
+    w4.connect()
+    logging.info('Connected to W4.')
+    w4.login()
+    logging.info('Logged in to W4.')
+
     if PSUtil.isPS(file):
 
         logging.info(f'{file:<30}- Processing')
@@ -75,9 +77,8 @@ def Process(file_full):
 
             dest_path = adaptPath(os.path.join(pathe,ps.pdf_basename))           
 
-            if args.upload is not None:
-                w4.sendFile(ps.pdf_path,dest_path)
-                logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
+            w4.sendFile(ps.pdf_path,dest_path)
+            logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
 
 
             ps.deletePDF()
@@ -98,17 +99,17 @@ def Process(file_full):
 
         dest_path = adaptPath(os.path.join(pathe,fit.json_basename))
 
-        if args.upload is not None:
-            w4.sendFile(fit.json_path,dest_path)
-            logging.info(f'{file:<30}- Sent to W4.')
+        w4.sendFile(fit.json_path,dest_path)
+        logging.info(f'{file:<30}- Sent to W4.')
 
         fit.deleteJSON()
         logging.info(f'{file:<30}- Deleted.')
 
+    w4.close()
+
+    return common_name
 
  
-
-
 
 core = 16
 total_files = []
@@ -123,6 +124,18 @@ widgets = ['Processing...', progressbar.Bar('*'), progressbar.Percentage()]
 bar = progressbar.ProgressBar(max_value=len(total_files),widgets=widgets).start()
 
 processed = 0
+
+pool = Pool(core)
+for result in pool.imap(Process,total_files):
+    if result:
+        HIST.append(result)
+
+    processed += 1
+    bar.update(processed)
+
+
+HIST.saveHistory()
+exit()
 
 
 for index in range(0,len(total_files),core):
@@ -147,7 +160,3 @@ for index in range(0,len(total_files),core):
 
 HIST.saveHistory()
 logging.info(f'History saved.')
-
-if args.upload is not None:
-    w4.close()
-    logging.info(f'W4 connection closed.')
