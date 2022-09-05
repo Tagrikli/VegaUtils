@@ -101,6 +101,10 @@ Not Processed count:    {file_count_not_processed}
 if args.scan_only is not None:
     exit()
 
+if file_count_not_processed == 0:
+    print("Nothing to do. Bye!")
+    exit()
+
 print("Files are being processed...")
 
 progress_bar.start(file_count_not_processed)
