@@ -114,7 +114,6 @@ for i,file_path in enumerate(files_to_process):
     file = os.path.basename(file_path)
     
 
-
     if PSUtil.isPS(file):
 
         logging.info(f'{file:<30}- Processing')
@@ -157,6 +156,7 @@ for i,file_path in enumerate(files_to_process):
 
         fit.deleteJSON()
         logging.info(f'{file:<30}- Deleted.')
+
 
     HIST.append(file)
     logging.info(f'{file:<30}- Added to history.')
