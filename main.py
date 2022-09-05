@@ -58,7 +58,6 @@ if args.upload is not None:
 
 
 # Folder scan
-
 print()
 print("Folders are scanning...")
 
