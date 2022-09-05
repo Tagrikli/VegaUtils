@@ -33,7 +33,7 @@ logging.basicConfig(
 
 
 # Progressbar setup
-widgets = ["Processed:",progressbar.Bar('#'),progressbar.Percentage]
+widgets = ["Processed:",progressbar.Bar('#'),progressbar.Percentage()]
 progress_bar = progressbar.ProgressBar(widgets=widgets)
 
 # Enable debug paths if its the case.

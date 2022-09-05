@@ -1,5 +1,5 @@
 from os import remove,path
-from subprocess import run
+from subprocess import run,DEVNULL
 from consts import EXT
 
 import logging
@@ -23,7 +23,7 @@ class PSUtil:
         dst_path = path.join(self.temp_path,self.pdf_basename)        
         self.pdf_path = dst_path
 
-        p = run(['ps2pdf',src_path,dst_path])
+        p = run(['ps2pdf',src_path,dst_path],stderr=DEVNULL)
         if p.returncode != 0:
             logging.error(f"{self.ps_filename:<30} Processing Failed")
             return False
