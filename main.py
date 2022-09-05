@@ -9,16 +9,17 @@ from utils.FITS import FITUtil
 from utils.PS import PSUtil
 from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
+import progressbar
 
-### Argument Parsing ###
+
+# Argument parsing
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
 parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
 parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs='*')
 args = parser.parse_args()
-###
 
 
-### Logging configuration ###
+# Logging configuration
 logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
     level=logging.DEBUG,
@@ -27,8 +28,11 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
-###
 
+
+# Progressbar setup
+widgets = ["Processed:",progressbar.Bar('#'),progressbar.Percentage]
+progress_bar = progressbar.ProgressBar(widgets=widgets)
 
 # Enable debug paths if its the case.
 if args.debug is not None:
