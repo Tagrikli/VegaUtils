@@ -78,15 +78,14 @@ for path, dirs, files in os.walk(BASE_DIR,False):
             file_count_invalid += 1
             continue
 
-        common_name = commonName(file)
-        
+
         # If file already processed.
-        if HIST.exists(common_name):
+        if HIST.exists(file):
             logging.debug(f'{file:<30}- Already processed.')
             file_count_processed += 1
             continue       
 
-        logging.info(f"{common_name:<30}- Not in history.")
+        logging.info(f"{file:<30}- Not in history.")
         files_to_process.append(os.path.join(path,file))
 
 file_count_not_processed = len(files_to_process)
@@ -113,7 +112,7 @@ for i,file_path in enumerate(files_to_process):
 
     path = os.path.dirname(file_path)
     file = os.path.basename(file_path)
-    common_name = commonName(file)
+    
 
 
     if PSUtil.isPS(file):
@@ -159,8 +158,8 @@ for i,file_path in enumerate(files_to_process):
         fit.deleteJSON()
         logging.info(f'{file:<30}- Deleted.')
 
-    HIST.append(common_name)
-    logging.info(f'{common_name:<30}- Added to history.')
+    HIST.append(file)
+    logging.info(f'{file:<30}- Added to history.')
 
     progress_bar.update(i)
 
