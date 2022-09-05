@@ -3,6 +3,7 @@ import sys
 import os
 from os import path
 import logging
+from turtle import exitonclick
 from config import BASE_DIR, BASE_DIR_DEV, HIST_FILE,TEMP_DIR,TEMP_DIR_DEV
 from utils.FTP_TLS import W4FTPS, Explicit_FTP_TLS
 from utils.FITS import FITUtil
@@ -16,13 +17,14 @@ import progressbar
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
 parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
 parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs='*')
+parser.add_argument('--scan-only',action='store',help='Scan folders.',nargs='*')
 args = parser.parse_args()
 
 
 # Logging configuration
 logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
-    level=logging.DEBUG,
+    level=logging.ERROR,
     handlers=[
         logging.FileHandler("debug.log"),
         logging.StreamHandler(sys.stdout)
@@ -43,79 +45,122 @@ if args.debug is not None:
 HIST.load(HIST_FILE)
 logging.info('History loaded.')
 
-
+# FTP_TLS connection setup
 if args.upload is not None:
-    w4 = W4FTPS()
-    w4.connect()
-    logging.info('Connected to W4.')
-    w4.login()
-    logging.info('Logged in to W4.')
+    try:
+        w4 = W4FTPS()
+        w4.connect()
+        logging.info('Connected to W4.')
+        w4.login()
+        logging.info('Logged in to W4.')
+    except:
+        logging.error("Something wrong with FTP Init.")
+        exit()
 
 
-for pathe, dirs, files in os.walk(BASE_DIR,False):
+# Folder scan
+
+print()
+print("Folders are scanning...")
+
+files_to_process = []
+file_count_not_processed = 0
+
+file_count_processed = 0
+file_count_invalid = 0
+
+for path, dirs, files in os.walk(BASE_DIR,False):
     for file in files:
 
-        # If file is not valid, skip it.
+        # If file is not valid. (Check regex)
         if not fileIsValid(file):
-            logging.info(f"{file:<30}- Not valid. Skipping.")
+            logging.info(f"{file:<30}- Not valid.")
+            file_count_invalid += 1
             continue
 
-        
         common_name = commonName(file)
         
-        # If file already processed, skip it.
+        # If file already processed.
         if HIST.exists(common_name):
-            logging.debug(f'{file:<30}- Already processed. Skipping.')
-            continue
+            logging.debug(f'{file:<30}- Already processed.')
+            file_count_processed += 1
+            continue       
 
         logging.info(f"{common_name:<30}- Not in history.")
+        files_to_process.append(os.path.join(path,file))
 
-        if PSUtil.isPS(file):
+file_count_not_processed = len(files_to_process)
 
-            logging.info(f'{file:<30}- Processing')
-            
-            ps = PSUtil(pathe,file,TEMP_DIR)
-                            
-            ret = ps.toPDF()
-            if ret:
-                logging.info(f'{file:<30}- Converted to PDF.')
+print(f"""
+--------- SCAN RESULT --------
+Processed count:        {file_count_processed}
+Invalid file count:     {file_count_invalid}
+Not Processed count:    {file_count_not_processed}
+""")
 
-                dest_path = adaptPath(path.join(pathe,ps.pdf_basename))           
+if args.scan_only is not None:
+    exit()
 
-                if args.upload is not None:
-                    w4.sendFile(ps.pdf_path,dest_path)
-                    logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
+print("Files are being processed...")
 
+progress_bar.start(file_count_not_processed)
 
-                ps.deletePDF()
-                logging.info(f'{ps.pdf_basename:<30}- Deleted.')
-            else:
-                logging.error(f"{file:<30} PS to PDF Error.")
-                ps.deletePDF()
-                continue
+for i,file_path in enumerate(files_to_process):
+
+    path = os.path.dirname(file_path)
+    file = os.path.basename(file_path)
+    common_name = commonName(file)
 
 
-        if FITUtil.isFITS(file):
+    if PSUtil.isPS(file):
 
-            logging.info(f'{file:<30}- Processing')
-            
-            fit = FITUtil(pathe,file,TEMP_DIR)
+        logging.info(f'{file:<30}- Processing')
+        
+        ps = PSUtil(path,file,TEMP_DIR)
+                        
+        ret = ps.toPDF()
+        if ret:
+            logging.info(f'{file:<30}- Converted to PDF.')
 
-            fit.toJSON()
-            logging.info(f'{file:<30}- Converted to JSON.')
-
-            dest_path = adaptPath(path.join(pathe,fit.json_basename))
+            dest_path = adaptPath(os.path.join(path,ps.pdf_basename))           
 
             if args.upload is not None:
-                w4.sendFile(fit.json_path,dest_path)
-                logging.info(f'{file:<30}- Sent to W4.')
+                w4.sendFile(ps.pdf_path,dest_path)
+                logging.info(f'{ps.pdf_basename:<30}- Sent to W4.')
 
-            fit.deleteJSON()
-            logging.info(f'{file:<30}- Deleted.')
 
-        HIST.append(common_name)
-        logging.info(f'{common_name:<30}- Added to history.')
+            ps.deletePDF()
+            logging.info(f'{ps.pdf_basename:<30}- Deleted.')
+        else:
+            logging.error(f"{file:<30} PS to PDF Error.")
+            ps.deletePDF()
+            continue
 
+
+    if FITUtil.isFITS(file):
+
+        logging.info(f'{file:<30}- Processing')
+        
+        fit = FITUtil(path,file,TEMP_DIR)
+
+        fit.toJSON()
+        logging.info(f'{file:<30}- Converted to JSON.')
+
+        dest_path = adaptPath(os.path.join(path,fit.json_basename))
+
+        if args.upload is not None:
+            w4.sendFile(fit.json_path,dest_path)
+            logging.info(f'{file:<30}- Sent to W4.')
+
+        fit.deleteJSON()
+        logging.info(f'{file:<30}- Deleted.')
+
+    HIST.append(common_name)
+    logging.info(f'{common_name:<30}- Added to history.')
+
+    progress_bar.update(i)
+
+print("Processing finished.")
 
 HIST.save()
 logging.info(f'History saved.')
