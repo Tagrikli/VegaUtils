@@ -25,7 +25,7 @@ class PSUtil:
 
         p = run(['ps2pdf',src_path,dst_path],stderr=DEVNULL)
         if p.returncode != 0:
-            logging.error(f"{self.ps_filename:<30} Processing Failed")
+            logging.error(f"{self.ps_filename:<30}- Processing Failed")
             return False
 
         return True
