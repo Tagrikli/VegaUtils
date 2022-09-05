@@ -24,11 +24,10 @@ args = parser.parse_args()
 # Logging configuration
 logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
-    level=logging.ERROR,
+    level=logging.INFO,
     handlers=[
         logging.FileHandler("debug.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    ],
 )
 
 
