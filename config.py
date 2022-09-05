@@ -11,6 +11,7 @@ TEMP_DIR = '/vdata1/shared/tagrikli'
 W4_PATH = '/VEGA_DATA'
 
 HIST_FILE = 'history'
+LAST_FILE = 'last_folder'
 MODES = ['Bayesian','Poisson','SN']
 
 

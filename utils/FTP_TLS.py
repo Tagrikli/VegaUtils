@@ -1,5 +1,6 @@
 import ftplib
 from ftplib import all_errors
+import logging
 from pathlib import Path
 from consts import FTP_ERROR
 
@@ -51,6 +52,7 @@ class W4FTPS:
 
 
 
+
     def sendFile(self,src,dest):
 
         with open(src,'rb') as file:
@@ -62,11 +64,10 @@ class W4FTPS:
 
                 if error_msg == FTP_ERROR.NO_SUCH_FILE_OR_DIR:
                     self.mkdir(path.dirname(dest))
-            
                     self.ftp.storbinary(f'STOR {dest}',file)
 
                 else:
-                    print("Oh no", error_msg)
+                    logging.error(f"{dest:>30}- Unknown error. {e}") 
 
 
     def __error_msg(self,error):

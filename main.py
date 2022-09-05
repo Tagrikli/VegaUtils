@@ -10,32 +10,35 @@ from utils.PS import PSUtil
 from utils.General import adaptPath, commonName, fileIsValid
 from utils.History import HIST
 
-
+### Argument Parsing ###
 parser = argparse.ArgumentParser('File transition and transportation utilty for Vega.')
 parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
 parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs='*')
-
 args = parser.parse_args()
+###
 
 
+### Logging configuration ###
 logging.basicConfig(
-    format='[%(asctime)s - %(funcName)s] -> %(message)s',
+    format='[%(asctime)s] -> %(message)s',
     level=logging.DEBUG,
     handlers=[
         logging.FileHandler("debug.log"),
         logging.StreamHandler(sys.stdout)
     ]
 )
+###
 
 
+# Enable debug paths if its the case.
 if args.debug is not None:
     BASE_DIR = BASE_DIR_DEV
     TEMP_DIR = TEMP_DIR_DEV
 
 
-
-HIST.loadHistory(HIST_FILE)
+HIST.load(HIST_FILE)
 logging.info('History loaded.')
+
 
 if args.upload is not None:
     w4 = W4FTPS()
@@ -48,16 +51,18 @@ if args.upload is not None:
 for pathe, dirs, files in os.walk(BASE_DIR,False):
     for file in files:
 
+        # If file is not valid, skip it.
         if not fileIsValid(file):
             logging.info(f"{file:<30}- Not valid. Skipping.")
             continue
 
-
+        
         common_name = commonName(file)
-        if HIST.inHistory(common_name):
+        
+        # If file already processed, skip it.
+        if HIST.exists(common_name):
             logging.debug(f'{file:<30}- Already processed. Skipping.')
             continue
-
 
         logging.info(f"{common_name:<30}- Not in history.")
 
@@ -81,6 +86,7 @@ for pathe, dirs, files in os.walk(BASE_DIR,False):
                 ps.deletePDF()
                 logging.info(f'{ps.pdf_basename:<30}- Deleted.')
             else:
+                logging.error(f"{file:<30} PS to PDF Error.")
                 ps.deletePDF()
                 continue
 
@@ -107,7 +113,7 @@ for pathe, dirs, files in os.walk(BASE_DIR,False):
         logging.info(f'{common_name:<30}- Added to history.')
 
 
-HIST.saveHistory()
+HIST.save()
 logging.info(f'History saved.')
 
 if args.upload is not None:
