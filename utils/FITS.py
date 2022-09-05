@@ -81,7 +81,8 @@ class FITUtil:
             elif header == "SIGNIFICANCE":
                 result[header] = [float(sig_value) for sig_value in value]
 
-
+            else:
+                result[header] = float(value)
 
         return result
 
