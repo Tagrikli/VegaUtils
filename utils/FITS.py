@@ -82,7 +82,10 @@ class FITUtil:
                 result[header] = [float(sig_value) for sig_value in value]
 
             else:
-                result[header] = float(value)
+                try:
+                    result[header] = float(value)
+                except TypeError as e:
+                    logging.error(f"{self.fits_filename:<30}- TypeError {header} {value}")
 
         return result
 
