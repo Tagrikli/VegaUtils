@@ -5,7 +5,6 @@ import sys
 import os
 from os import path
 import logging
-from turtle import exitonclick
 from config import BASE_DIR, BASE_DIR_DEV, HIST_FILE,TEMP_DIR,TEMP_DIR_DEV
 from utils.FTP_TLS import W4FTPS, Explicit_FTP_TLS
 from utils.FITS import FITUtil
@@ -34,7 +33,7 @@ logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
     level=LOG_LEVEL,
     handlers=[
-        logging.FileHandler("debug.log"),
+        logging.FileHandler("debug.log")
     ],
 )
 
