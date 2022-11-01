@@ -1,4 +1,6 @@
 import argparse
+from distutils.debug import DEBUG
+from distutils.log import INFO
 import sys
 import os
 from os import path
@@ -18,13 +20,19 @@ parser = argparse.ArgumentParser('File transition and transportation utilty for 
 parser.add_argument('--debug',action='store',help="Use real paths or development paths.",nargs='*')
 parser.add_argument('--upload',action='store',help='Upload to W4 or not.',nargs='*')
 parser.add_argument('--scan-only',action='store',help='Scan folders.',nargs='*')
+parser.add_argument('--reupload-all',action='store',help="Re-upload all files.",nargs="*")
+parser.add_argument('--verbose',action='store',nargs="*")
 args = parser.parse_args()
 
 
+
 # Logging configuration
+
+LOG_LEVEL = logging.DEBUG if args.verbose is not None else logging.INFO
+
 logging.basicConfig(
     format='[%(asctime)s] -> %(message)s',
-    level=logging.INFO,
+    level=LOG_LEVEL,
     handlers=[
         logging.FileHandler("debug.log"),
     ],
@@ -39,6 +47,14 @@ progress_bar = progressbar.ProgressBar(widgets=widgets)
 if args.debug is not None:
     BASE_DIR = BASE_DIR_DEV
     TEMP_DIR = TEMP_DIR_DEV
+
+
+if args.reupload_all is not None:
+    try:
+        os.remove(path.abspath(HIST_FILE))
+        logging.info("History file deleted.")
+    except:
+        logging.error("History file cannot be deleted.")
 
 
 HIST.load(HIST_FILE)
